@@ -1,7 +1,7 @@
 ﻿
 using Microsoft.AspNetCore.Identity;
 
-namespace InventoryApi.Models;
+namespace Inventory.Infrastructure.Identity;
 
 public class AppUser: IdentityUser<int>
 {
