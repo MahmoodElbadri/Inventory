@@ -11,4 +11,5 @@ public interface IProductRepository
     Task<PagedResult<Product>> GetAllProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken);
     Task<bool> UpdateProductAsync(int id ,Product product, CancellationToken cancellationToken);
     Task<bool> DeleteProductAsync(int productId, CancellationToken cancellationToken);
+    Task<bool> IsProductNameExist(string name, CancellationToken cancellationToken);
 }

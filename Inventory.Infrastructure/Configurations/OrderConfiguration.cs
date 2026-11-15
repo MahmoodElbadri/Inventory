@@ -75,7 +75,9 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         // 2. Unique Index Configuration
         builder.HasIndex(p => p.ProductName)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
+       
 
         builder.Property(p => p.Description)
             .HasMaxLength(500);

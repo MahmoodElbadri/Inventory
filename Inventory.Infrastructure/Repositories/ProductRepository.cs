@@ -49,6 +49,11 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
         return await db.Products.FirstOrDefaultAsync(p => p.Id == productId && p.isDeleted == false, cancellationToken);
     }
 
+    public async Task<bool> IsProductNameExist(string name, CancellationToken cancellationToken)
+    {
+       return await db.Products.AnyAsync(p => p.ProductName == name && p.isDeleted == false, cancellationToken);
+    }
+
     public async Task<bool> UpdateProductAsync(int id, Product product, CancellationToken cancellationToken)
     {
         var existingProduct = await db.Products.FirstOrDefaultAsync(p => p.Id == id && p.isDeleted == false, cancellationToken);

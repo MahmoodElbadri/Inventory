@@ -29,6 +29,7 @@ public sealed class ExceptionHandlingMiddleware(
             }
 
             var isNotFound = exception is NotFoundException;
+            var isConflict = exception is DuplicateProductNameException;
             var statusCode = isNotFound
                 ? StatusCodes.Status404NotFound
                 : StatusCodes.Status500InternalServerError;
@@ -36,6 +37,11 @@ public sealed class ExceptionHandlingMiddleware(
             if (isNotFound)
             {
                 logger.LogWarning(exception, "Resource not found. Trace ID: {TraceId}",
+                    context.TraceIdentifier);
+            }
+            else if (isConflict)
+            {
+                logger.LogWarning(exception, "Duplicate product name. Trace ID: {TraceId}",
                     context.TraceIdentifier);
             }
             else
@@ -47,7 +53,7 @@ public sealed class ExceptionHandlingMiddleware(
             var response = new ApiResponse<object>(
                 false,
                 statusCode,
-                isNotFound ? exception.Message : "An unexpected error occurred. Please try again later.",
+                isNotFound ? exception.Message : isConflict ? exception.Message : "An unexpected error occurred. Please try again later.",
                 null,
                 null,
                 context.TraceIdentifier);

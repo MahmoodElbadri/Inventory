@@ -12,6 +12,11 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
 {
     public async Task<ProductResponse> AddProductAsync(ProductAddRequest product, CancellationToken cancellationToken)
     {
+        var isNameExist = await productRepository.IsProductNameExist(product.ProductName, cancellationToken);
+        if (isNameExist)
+        {
+            throw new DuplicateProductNameException(product.ProductName);
+        }
         var productEntity = mapper.Map<Product>(product);
         var addedProduct = await productRepository.AddProductAsync(productEntity, cancellationToken);
         return mapper.Map<ProductResponse>(addedProduct);
@@ -31,7 +36,7 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     {
         if(pageNumber > 1000 || pageSize > 100)
         {
-            throw new ArgumentOutOfRangeException("Page number or page size is out of range.");
+            throw new BadRequestException("Page number or page size is out of range.");
         }
     
         var products = await productRepository.GetAllProductsAsync(pageNumber, pageSize, cancellationToken);
@@ -62,4 +67,5 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
         }
         return true;
     }
+
 }
