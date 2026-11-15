@@ -1,5 +1,6 @@
 using System;
 using AutoMapper;
+using Inventory.Application.Common;
 using Inventory.Application.Exceptions;
 using Inventory.Application.Products.DTOs;
 using Inventory.Application.Products.Interfaces;
@@ -26,10 +27,14 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
         return true;
     }
 
-    public async Task<IEnumerable<ProductResponse>> GetAllProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken)
+    public async Task<PagedResult<ProductResponse>> GetAllProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken)
     {
         var products = await productRepository.GetAllProductsAsync(pageNumber, pageSize, cancellationToken);
-        return mapper.Map<IEnumerable<ProductResponse>>(products);
+        return new PagedResult<ProductResponse>(
+            mapper.Map<List<ProductResponse>>(products.Items),
+            products.TotalCount,
+            products.PageNumber,
+            products.PageSize);
     }
 
     public async Task<ProductResponse?> GetProductByIdAsync(int productId, CancellationToken cancellationToken)

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Inventory.Infrastructure.Configurations;
 
-public class OrderConfiguration:IEntityTypeConfiguration<Order>
+public class OrderConfiguration : IEntityTypeConfiguration<Order>
 {
     public void Configure(EntityTypeBuilder<Order> builder)
     {
@@ -22,7 +22,7 @@ public class OrderConfiguration:IEntityTypeConfiguration<Order>
             .HasPrecision(18, 2);
     }
 
-    
+
 }
 
 public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
@@ -41,7 +41,7 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         builder.Property(oi => oi.UnitPrice)
         .HasColumnType("decimal(10,2)")
             .IsRequired();
-        
+
         builder.Property(oi => oi.UnitPrice)
             .HasPrecision(18, 2);
 
@@ -70,7 +70,12 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
     {
         builder.HasKey(p => p.Id);
         builder.Property(p => p.ProductName)
-            .IsRequired();
+            .IsRequired()
+            .HasMaxLength(100);
+
+        // 2. Unique Index Configuration
+        builder.HasIndex(p => p.ProductName)
+            .IsUnique();
 
         builder.Property(p => p.Description)
             .HasMaxLength(500);
@@ -81,9 +86,10 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Price)
             .HasPrecision(18, 2);
 
-        builder.Property(p=>p.RowVersion)
+        builder.Property(p => p.RowVersion)
             .IsRowVersion()
             .IsConcurrencyToken();
+
     }
 }
 

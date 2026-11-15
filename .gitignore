@@ -78,3 +78,4 @@ IIS Express
 .vscode
 iisexpress
 /.verification/unified-response
+/.verification/total-count

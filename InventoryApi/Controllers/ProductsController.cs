@@ -13,6 +13,7 @@ public class ProductsController(IProductService productService) : ControllerBase
     public async Task<IActionResult> GetAllProducts(int pageNumber, int pageSize, CancellationToken cancellationToken)
     {
         var products = await productService.GetAllProductsAsync(pageNumber, pageSize, cancellationToken);
+        
         return Ok(products);
     }
 

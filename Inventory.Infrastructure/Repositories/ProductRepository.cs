@@ -1,4 +1,5 @@
 using System;
+using Inventory.Application.Common;
 using Inventory.Application.Products.Interfaces;
 using Inventory.Infrastructure.Data;
 using InventoryApi.Models;
@@ -24,14 +25,22 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
         return true;
     }
 
-    public async Task<IEnumerable<Product>> GetAllProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken)
+    public async Task<PagedResult<Product>> GetAllProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken)
     {
         if(pageNumber < 1 || pageSize < 1)
         {
             pageNumber = 1;
             pageSize = 10;
         }
-        return await db.Products.Where(p => p.isDeleted == false).OrderBy(p => p.Id).Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        var query = db.Products.Where(p => p.isDeleted == false);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var products = await query
+            .OrderBy(p => p.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<Product>(products, totalCount, pageNumber, pageSize);
     }
 
     public async Task<Product?> GetProductByIdAsync(int productId, CancellationToken cancellationToken)
