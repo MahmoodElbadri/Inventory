@@ -1,4 +1,6 @@
+using Inventory.Application.Products.Interfaces;
 using Inventory.Infrastructure.Data;
+using Inventory.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +13,8 @@ public static class InfrastructureCollectionExtensions
     {
         services.AddDbContext<InventoryDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+        services.AddScoped<IProductRepository, ProductRepository>();
+
         return services;
     }
 }
