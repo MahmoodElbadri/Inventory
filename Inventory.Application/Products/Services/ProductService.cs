@@ -1,5 +1,6 @@
 using System;
 using AutoMapper;
+using Inventory.Application.Exceptions;
 using Inventory.Application.Products.DTOs;
 using Inventory.Application.Products.Interfaces;
 using InventoryApi.Models;
@@ -8,46 +9,46 @@ namespace Inventory.Application.Products.Services;
 
 public class ProductService(IProductRepository productRepository, IMapper mapper) : IProductService
 {
-    public async Task<ProductResponse> AddProductAsync(ProductAddRequest product)
+    public async Task<ProductResponse> AddProductAsync(ProductAddRequest product, CancellationToken cancellationToken)
     {
         var productEntity = mapper.Map<Product>(product);
-        var addedProduct = await productRepository.AddProductAsync(productEntity);
+        var addedProduct = await productRepository.AddProductAsync(productEntity, cancellationToken);
         return mapper.Map<ProductResponse>(addedProduct);
     }
 
-    public async Task<bool> DeleteProductAsync(int productId)
+    public async Task<bool> DeleteProductAsync(int productId, CancellationToken cancellationToken)
     {
-        var isDeleted = await productRepository.DeleteProductAsync(productId);
+        var isDeleted = await productRepository.DeleteProductAsync(productId, cancellationToken);
         if(!isDeleted)
         {
-            throw new Exception($"Product with ID {productId} not found.");
+            throw new NotFoundException($"Product with ID {productId} not found.");
         }
         return true;
     }
 
-    public async Task<IEnumerable<ProductResponse>> GetAllProductsAsync()
+    public async Task<IEnumerable<ProductResponse>> GetAllProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken)
     {
-        var products = await productRepository.GetAllProductsAsync();
+        var products = await productRepository.GetAllProductsAsync(pageNumber, pageSize, cancellationToken);
         return mapper.Map<IEnumerable<ProductResponse>>(products);
     }
 
-    public async Task<ProductResponse?> GetProductByIdAsync(int productId)
+    public async Task<ProductResponse?> GetProductByIdAsync(int productId, CancellationToken cancellationToken)
     {
-        var product = await productRepository.GetProductByIdAsync(productId);
+        var product = await productRepository.GetProductByIdAsync(productId, cancellationToken);
         if(product == null)
         {
-            throw new Exception($"Product with ID {productId} not found.");
+            throw new NotFoundException($"Product with ID {productId} not found.");
         }
         return mapper.Map<ProductResponse?>(product);
     }
 
-    public async Task<bool> UpdateProductAsync(ProductUpdateRequest product)
+    public async Task<bool> UpdateProductAsync(ProductUpdateRequest product, CancellationToken cancellationToken)
     {
         var productEntity = mapper.Map<Product>(product);
-        var isUpdated = await productRepository.UpdateProductAsync(productEntity);
+        var isUpdated = await productRepository.UpdateProductAsync(product.Id, productEntity, cancellationToken);
         if(!isUpdated)
         {
-            throw new Exception($"Product with ID {product.Id} not found.");
+            throw new NotFoundException($"Product with ID {product.Id} not found.");
         }
         return true;
     }

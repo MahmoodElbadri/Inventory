@@ -10,16 +10,16 @@ namespace Inventory.Api.Controllers;
 public class ProductsController(IProductService productService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAllProducts()
+    public async Task<IActionResult> GetAllProducts(int pageNumber, int pageSize, CancellationToken cancellationToken)
     {
-        var products = await productService.GetAllProductsAsync();
+        var products = await productService.GetAllProductsAsync(pageNumber, pageSize, cancellationToken);
         return Ok(products);
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetProductById(int id)
+    public async Task<IActionResult> GetProductById(int id, CancellationToken cancellationToken)
     {
-        var product = await productService.GetProductByIdAsync(id);
+        var product = await productService.GetProductByIdAsync(id, cancellationToken);
         if (product == null)
         {
             return NotFound();
@@ -28,21 +28,21 @@ public class ProductsController(IProductService productService) : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddProduct([FromBody] ProductAddRequest product)
+    public async Task<IActionResult> AddProduct([FromBody] ProductAddRequest product, CancellationToken cancellationToken)
     {
-        var addedProduct = await productService.AddProductAsync(product);
+        var addedProduct = await productService.AddProductAsync(product, cancellationToken);
         return CreatedAtAction(nameof(GetProductById), new { id = addedProduct.Id }, addedProduct);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductUpdateRequest product)
+    public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductUpdateRequest product, CancellationToken cancellationToken)
     {
         if (id != product.Id)
         {
             return BadRequest("Product ID mismatch.");
         }
 
-        var isUpdated = await productService.UpdateProductAsync(product);
+        var isUpdated = await productService.UpdateProductAsync(product, cancellationToken);
         if (!isUpdated)
         {
             return NotFound();
@@ -52,9 +52,9 @@ public class ProductsController(IProductService productService) : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteProduct(int id)
+    public async Task<IActionResult> DeleteProduct(int id, CancellationToken cancellationToken)
     {
-        var isDeleted = await productService.DeleteProductAsync(id);
+        var isDeleted = await productService.DeleteProductAsync(id, cancellationToken);
         if (!isDeleted)
         {
             return NotFound();

@@ -5,9 +5,9 @@ namespace Inventory.Application.Products.Interfaces;
 
 public interface IProductService
 {
-    Task<ProductResponse> AddProductAsync(ProductAddRequest product);
-    Task<ProductResponse?> GetProductByIdAsync(int productId);
-    Task<IEnumerable<ProductResponse>> GetAllProductsAsync();
-    Task<bool> UpdateProductAsync(ProductUpdateRequest product);
-    Task<bool> DeleteProductAsync(int productId);
+    Task<ProductResponse> AddProductAsync(ProductAddRequest product, CancellationToken cancellationToken);
+    Task<ProductResponse?> GetProductByIdAsync(int productId, CancellationToken cancellationToken);
+    Task<IEnumerable<ProductResponse>> GetAllProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken);
+    Task<bool> UpdateProductAsync(ProductUpdateRequest product, CancellationToken cancellationToken);
+    Task<bool> DeleteProductAsync(int productId, CancellationToken cancellationToken);
 }
