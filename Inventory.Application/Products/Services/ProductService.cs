@@ -29,6 +29,11 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
 
     public async Task<PagedResult<ProductResponse>> GetAllProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken)
     {
+        if(pageNumber > 1000 || pageSize > 100)
+        {
+            throw new ArgumentOutOfRangeException("Page number or page size is out of range.");
+        }
+    
         var products = await productRepository.GetAllProductsAsync(pageNumber, pageSize, cancellationToken);
         return new PagedResult<ProductResponse>(
             mapper.Map<List<ProductResponse>>(products.Items),

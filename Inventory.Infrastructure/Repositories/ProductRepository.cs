@@ -18,9 +18,10 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
 
     public async Task<bool> DeleteProductAsync(int productId, CancellationToken cancellationToken)
     {
-        var product = await db.Products.FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
+        var product = await db.Products.FirstOrDefaultAsync(p => p.Id == productId && p.isDeleted == false, cancellationToken);
         if (product == null) return false;
         product.isDeleted = true;
+        product.ProductName = product.ProductName + " (Deleted)";
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -57,7 +58,9 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
         }
 
         existingProduct.ProductName = product.ProductName;
-        existingProduct.Price = product.Price > 0 ? product.Price : existingProduct.Price;
+        existingProduct.Price = product.Price;
+        existingProduct.Description = product.Description;
+
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }
