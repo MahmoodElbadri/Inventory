@@ -21,7 +21,7 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
         var product = await db.Products.FirstOrDefaultAsync(p => p.Id == productId && p.isDeleted == false, cancellationToken);
         if (product == null) return false;
         product.isDeleted = true;
-        product.ProductName = product.ProductName + " (Deleted)";
+        // product.ProductName = product.ProductName + " (Deleted)";
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }

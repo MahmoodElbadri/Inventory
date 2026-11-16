@@ -181,7 +181,8 @@ namespace Inventory.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProductName")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[isDeleted] = 0");
 
                     b.ToTable("Products");
                 });
