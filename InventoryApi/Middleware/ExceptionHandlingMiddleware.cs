@@ -32,7 +32,7 @@ public sealed class ExceptionHandlingMiddleware(
             var isConflict = exception is DuplicateProductNameException;
             var statusCode = isNotFound
                 ? StatusCodes.Status404NotFound
-                : StatusCodes.Status500InternalServerError;
+                : StatusCodes.Status409Conflict;
 
             if (isNotFound)
             {

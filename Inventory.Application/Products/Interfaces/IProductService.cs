@@ -11,4 +11,5 @@ public interface IProductService
     Task<PagedResult<ProductResponse>> GetAllProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken);
     Task<bool> UpdateProductAsync(ProductUpdateRequest product, CancellationToken cancellationToken);
     Task<bool> DeleteProductAsync(int productId, CancellationToken cancellationToken);
+    Task<bool> RestockProduct(RestockAddRequest restock, CancellationToken cancellationToken);
 }

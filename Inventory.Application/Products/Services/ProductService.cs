@@ -1,17 +1,32 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using AutoMapper;
+using FluentValidation;
 using Inventory.Application.Common;
 using Inventory.Application.Exceptions;
 using Inventory.Application.Products.DTOs;
 using Inventory.Application.Products.Interfaces;
 using InventoryApi.Models;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Inventory.Application.Products.Services;
 
-public class ProductService(IProductRepository productRepository, IMapper mapper) : IProductService
+public class ProductService(IProductRepository productRepository, IMapper mapper, IValidator<ProductAddRequest> addValidator,
+    IValidator<ProductUpdateRequest> updateValidator,
+    IValidator<RestockAddRequest> restockValidator) : IProductService
 {
     public async Task<ProductResponse> AddProductAsync(ProductAddRequest product, CancellationToken cancellationToken)
     {
+        var validationResult =
+            await addValidator.ValidateAsync(product, cancellationToken);
+
+        if (!validationResult.IsValid)
+        {
+            throw new BadRequestException(
+                string.Join(" ", validationResult.Errors
+                    .Select(error => error.ErrorMessage)));
+        }
+
         var isNameExist = await productRepository.IsProductNameExist(product.ProductName, cancellationToken);
         if (isNameExist)
         {
@@ -30,6 +45,19 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
             throw new NotFoundException($"Product with ID {productId} not found.");
         }
         return true;
+    }
+
+    public async Task<bool> RestockProduct(RestockAddRequest restock, CancellationToken cancellationToken)
+    {
+        var validationResult = await restockValidator.ValidateAsync(restock, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            throw new BadRequestException(
+                string.Join(" ", validationResult.Errors
+                    .Select(error => error.ErrorMessage)));
+        }
+
+        return await productRepository.RestockProduct(restock.ProductId, restock.Quantity, cancellationToken);
     }
 
     public async Task<PagedResult<ProductResponse>> GetAllProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken)
@@ -59,6 +87,17 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
 
     public async Task<bool> UpdateProductAsync(ProductUpdateRequest product, CancellationToken cancellationToken)
     {
+        var validationResult =
+            await updateValidator.ValidateAsync(product, cancellationToken);
+
+        if (!validationResult.IsValid)
+        {
+            throw new BadRequestException(
+                string.Join(" ", validationResult.Errors
+                    .Select(error => error.ErrorMessage)));
+        }
+
+
         var productEntity = mapper.Map<Product>(product);
         var isUpdated = await productRepository.UpdateProductAsync(product.Id, productEntity, cancellationToken);
         if(!isUpdated)

@@ -16,8 +16,10 @@ public class ProductAddValidation: AbstractValidator<ProductAddRequest>
         
         RuleFor(p => p.Description)
             .MaximumLength(500).WithMessage("Product description cannot exceed 500 characters.");
+
         RuleFor(p => p.Price)
             .GreaterThan(0).WithMessage("Product price must be greater than zero.");
+
         RuleFor(p => p.QuantityOnHand)
             .GreaterThanOrEqualTo(0).WithMessage("Product quantity cannot be negative.");
     }

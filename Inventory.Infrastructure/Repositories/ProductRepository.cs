@@ -1,5 +1,6 @@
 using System;
 using Inventory.Application.Common;
+using Inventory.Application.Exceptions;
 using Inventory.Application.Products.Interfaces;
 using Inventory.Infrastructure.Data;
 using InventoryApi.Models;
@@ -52,6 +53,48 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
     public async Task<bool> IsProductNameExist(string name, CancellationToken cancellationToken)
     {
        return await db.Products.AnyAsync(p => p.ProductName == name && p.isDeleted == false, cancellationToken);
+    }
+
+   public async Task<bool> RestockProduct(int productId, int quantity, CancellationToken cancellationToken)
+   {
+       int maxRetryCount = 3;
+       for (int i = maxRetryCount; i > 0; i--)
+       {
+           try
+           {
+               var product = await db.Products.FirstOrDefaultAsync(p => p.Id == productId && !p.isDeleted, cancellationToken);
+
+               if (product is null)
+                   throw new NotFoundException($"Product {productId} not found");
+
+               using var transactionProcess = await db.Database.BeginTransactionAsync(cancellationToken);
+
+               product.QuantityOnHand += quantity;
+
+               db.InventoryTransactions.Add(new InventoryTransaction
+               {
+                   ProductId = productId,
+                   QuantityChanged = quantity,
+                   Type = TransactionType.Restock,
+                   AdjustmentReason = $"Restocked product No. {quantity}"
+               });
+
+               await db.SaveChangesAsync(cancellationToken);
+
+               await transactionProcess.CommitAsync(cancellationToken);
+
+               return true;
+           }
+           catch(DbUpdateConcurrencyException ex)
+           {
+                if (ex.Entries.Count > 0)
+                {
+                    ex.Entries.Single().Reload();
+                }
+           }
+           
+       }
+       return false;
     }
 
     public async Task<bool> UpdateProductAsync(int id, Product product, CancellationToken cancellationToken)
