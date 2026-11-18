@@ -76,7 +76,7 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
                    ProductId = productId,
                    QuantityChanged = quantity,
                    Type = TransactionType.Restock,
-                   AdjustmentReason = $"Restocked product No. {quantity}"
+                   AdjustmentReason = $"Restocked product No. {productId} by {quantity} pieces at {DateTime.Now}"
                });
 
                await db.SaveChangesAsync(cancellationToken);
@@ -89,7 +89,8 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
            {
                 if (ex.Entries.Count > 0)
                 {
-                    ex.Entries.Single().Reload();
+                    ex.Entries.First().Reload();
+                    db.ChangeTracker.Clear();
                 }
            }
            

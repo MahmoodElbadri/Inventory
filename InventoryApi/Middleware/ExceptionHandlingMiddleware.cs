@@ -30,9 +30,22 @@ public sealed class ExceptionHandlingMiddleware(
 
             var isNotFound = exception is NotFoundException;
             var isConflict = exception is DuplicateProductNameException;
-            var statusCode = isNotFound
-                ? StatusCodes.Status404NotFound
-                : StatusCodes.Status409Conflict;
+            var isBadRequest = exception is BadRequestException;
+            // var statusCode = isNotFound
+            //     ? StatusCodes.Status404NotFound
+            //     ? StatusCodes.Status400BadRequest
+            //     : StatusCodes.Status409Conflict;
+
+            int statusCode;
+            if (isNotFound)
+                statusCode = StatusCodes.Status404NotFound;
+            else if (isConflict)
+                statusCode = StatusCodes.Status409Conflict;
+            else if (isBadRequest)
+                statusCode = StatusCodes.Status400BadRequest;
+            else
+                statusCode = StatusCodes.Status500InternalServerError;
+            
 
             if (isNotFound)
             {
