@@ -58,6 +58,7 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
    public async Task<bool> RestockProduct(int productId, int quantity, CancellationToken cancellationToken)
    {
        int maxRetryCount = 3;
+       
        for (int i = maxRetryCount; i > 0; i--)
        {
            try
@@ -67,7 +68,10 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
                if (product is null)
                    throw new NotFoundException($"Product {productId} not found");
 
-               using var transactionProcess = await db.Database.BeginTransactionAsync(cancellationToken);
+              await using var transactionProcess = await db.Database.BeginTransactionAsync(cancellationToken);
+
+              // add a checkpoint to rollback to the latest checkpoint 
+              await transactionProcess.CreateSavepointAsync("beforeRestock", cancellationToken);
 
                product.QuantityOnHand += quantity;
 
@@ -78,6 +82,7 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
                    Type = TransactionType.Restock,
                    AdjustmentReason = $"Restocked product No. {productId} by {quantity} pieces at {DateTime.Now}"
                });
+               await transactionProcess.RollbackToSavepointAsync("beforeRestock", cancellationToken);
 
                await db.SaveChangesAsync(cancellationToken);
 
@@ -87,12 +92,8 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
            }
            catch(DbUpdateConcurrencyException ex)
            {
-                if (ex.Entries.Count > 0)
-                {
-                    // ex.Entries.First().Reload(); 
-                    // Let's clear the change tracker to avoid the same exception in the next iteration.
-                    db.ChangeTracker.Clear();
-                }
+               Task.Delay(5000);
+                db.ChangeTracker.Clear();
            }
            
        }
