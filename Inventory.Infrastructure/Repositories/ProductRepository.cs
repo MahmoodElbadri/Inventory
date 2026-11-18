@@ -89,7 +89,8 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
            {
                 if (ex.Entries.Count > 0)
                 {
-                    ex.Entries.First().Reload();
+                    // ex.Entries.First().Reload(); 
+                    // Let's clear the change tracker to avoid the same exception in the next iteration.
                     db.ChangeTracker.Clear();
                 }
            }

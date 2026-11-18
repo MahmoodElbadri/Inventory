@@ -14,7 +14,17 @@ public class InventoryController(IProductService _productService) : ControllerBa
     public async Task<IActionResult> RestockInventory(RestockAddRequest request, CancellationToken cancellationToken)
     {
         var isStocked = await _productService.RestockProduct(request, cancellationToken);
-        return Ok(isStocked ? $"Product {request.ProductId} restocked" : $"Product {request.ProductId} not restocked");
+        if (isStocked)
+        {
+            return Ok(new
+            {
+                Message = $"Product No. {request.ProductId} restocked with quantity {request.Quantity}"
+            });
+        }
+        return StatusCode(409, new
+        {
+            Message = $"Failed to restock Product No. {request.ProductId}"
+        });
     }
 
 }
