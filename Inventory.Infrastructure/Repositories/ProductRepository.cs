@@ -58,6 +58,7 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
    public async Task<bool> RestockProduct(int productId, int quantity, CancellationToken cancellationToken)
    {
        int maxRetryCount = 3;
+       int attempt = 0;
        
        for (int i = maxRetryCount; i > 0; i--)
        {
@@ -82,7 +83,7 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
                    Type = TransactionType.Restock,
                    AdjustmentReason = $"Restocked product No. {productId} by {quantity} pieces at {DateTime.Now}"
                });
-               await transactionProcess.RollbackToSavepointAsync("beforeRestock", cancellationToken);
+            //    await transactionProcess.RollbackToSavepointAsync("beforeRestock", cancellationToken);
 
                await db.SaveChangesAsync(cancellationToken);
 
@@ -90,11 +91,21 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
 
                return true;
            }
-           catch(DbUpdateConcurrencyException ex)
-           {
-               Task.Delay(5000);
-                db.ChangeTracker.Clear();
-           }
+        //    catch(DbUpdateConcurrencyException ex)
+        //    {
+        //         db.ChangeTracker.Clear();
+        //        await Task.Delay(250, cancellationToken);
+        //    }
+        catch (DbUpdateConcurrencyException)
+            when (attempt < maxRetryCount - 1)
+        {
+            db.ChangeTracker.Clear();
+
+            var delay = 100 * (1 << attempt)
+                        + Random.Shared.Next(20, 100);
+
+            await Task.Delay(delay, cancellationToken);
+        }
            
        }
        return false;
