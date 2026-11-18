@@ -55,61 +55,63 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
        return await db.Products.AnyAsync(p => p.ProductName == name && p.isDeleted == false, cancellationToken);
     }
 
-   public async Task<bool> RestockProduct(int productId, int quantity, CancellationToken cancellationToken)
-   {
-       int maxRetryCount = 3;
-       int attempt = 0;
-       
-       for (int i = maxRetryCount; i > 0; i--)
-       {
-           try
-           {
-               var product = await db.Products.FirstOrDefaultAsync(p => p.Id == productId && !p.isDeleted, cancellationToken);
+    public async Task<bool> RestockProduct(int productId, int quantity, CancellationToken cancellationToken)
+    {
+        int maxRetryCount = 3;
+        int maxAttempts = 3;
+        int attempt = 0;
 
-               if (product is null)
-                   throw new NotFoundException($"Product {productId} not found");
-
-              await using var transactionProcess = await db.Database.BeginTransactionAsync(cancellationToken);
-
-              // add a checkpoint to rollback to the latest checkpoint 
-              await transactionProcess.CreateSavepointAsync("beforeRestock", cancellationToken);
-
-               product.QuantityOnHand += quantity;
-
-               db.InventoryTransactions.Add(new InventoryTransaction
-               {
-                   ProductId = productId,
-                   QuantityChanged = quantity,
-                   Type = TransactionType.Restock,
-                   AdjustmentReason = $"Restocked product No. {productId} by {quantity} pieces at {DateTime.Now}"
-               });
-            //    await transactionProcess.RollbackToSavepointAsync("beforeRestock", cancellationToken);
-
-               await db.SaveChangesAsync(cancellationToken);
-
-               await transactionProcess.CommitAsync(cancellationToken);
-
-               return true;
-           }
-        //    catch(DbUpdateConcurrencyException ex)
-        //    {
-        //         db.ChangeTracker.Clear();
-        //        await Task.Delay(250, cancellationToken);
-        //    }
-        catch (DbUpdateConcurrencyException)
-            when (i < maxRetryCount - 1)
+        for (int i = maxRetryCount; i > 0; i--)
         {
-            db.ChangeTracker.Clear();
+            try
+            {
+                var product = await db.Products.FirstOrDefaultAsync(p => p.Id == productId && !p.isDeleted, cancellationToken);
 
-            var delay = 100 * (1 << attempt)
-                        + Random.Shared.Next(20, 100);
-                attempt++;
+                if (product is null)
+                    throw new NotFoundException($"Product {productId} not found");
+
+                await using var transactionProcess = await db.Database.BeginTransactionAsync(cancellationToken);
+
+                // add a checkpoint to rollback to the latest checkpoint 
+                await transactionProcess.CreateSavepointAsync("beforeRestock", cancellationToken);
+
+                product.QuantityOnHand += quantity;
+
+                db.InventoryTransactions.Add(new InventoryTransaction
+                {
+                    ProductId = productId,
+                    QuantityChanged = quantity,
+                    Type = TransactionType.Restock,
+                    AdjustmentReason = $"Restocked product No. {productId} by {quantity} pieces at {DateTime.Now}"
+                });
+                //    await transactionProcess.RollbackToSavepointAsync("beforeRestock", cancellationToken);
+
+                await db.SaveChangesAsync(cancellationToken);
+
+                await transactionProcess.CommitAsync(cancellationToken);
+
+                return true;
+            }
+            //    catch(DbUpdateConcurrencyException ex)
+            //    {
+            //         db.ChangeTracker.Clear();
+            //        await Task.Delay(250, cancellationToken);
+            //    }
+            catch (DbUpdateConcurrencyException)
+            {
+                db.ChangeTracker.Clear();
+
+                if (attempt == maxAttempts - 1)
+                    return false;
+
+                var delay = 100 * (1 << attempt)
+                            + Random.Shared.Next(20, 100);
 
                 await Task.Delay(delay, cancellationToken);
+            }
         }
-           
-       }
-       return false;
+
+        return false;
     }
 
     public async Task<bool> UpdateProductAsync(int id, Product product, CancellationToken cancellationToken)
