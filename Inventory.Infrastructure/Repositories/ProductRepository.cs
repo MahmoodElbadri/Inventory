@@ -97,14 +97,15 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
         //        await Task.Delay(250, cancellationToken);
         //    }
         catch (DbUpdateConcurrencyException)
-            when (attempt < maxRetryCount - 1)
+            when (i < maxRetryCount - 1)
         {
             db.ChangeTracker.Clear();
 
             var delay = 100 * (1 << attempt)
                         + Random.Shared.Next(20, 100);
+                attempt++;
 
-            await Task.Delay(delay, cancellationToken);
+                await Task.Delay(delay, cancellationToken);
         }
            
        }
