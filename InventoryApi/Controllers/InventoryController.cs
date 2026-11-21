@@ -27,4 +27,22 @@ public class InventoryController(IProductService _productService) : ControllerBa
         });
     }
 
+    ///api/inventory/adjust
+    [HttpPut("adjust")]
+    public async Task<IActionResult> AdjustInventory(AdjustAddRequest request, CancellationToken cancellationToken)
+    {
+        var isAdjusted = await _productService.AdjustProduct(request, cancellationToken);
+        if (isAdjusted)
+        {
+            return Ok(new
+            {
+                Message = $"Product No. {request.ProductId} adjusted with quantity {request.NewQuantity}"
+            });
+        }
+        return StatusCode(409, new
+        {
+            Message = $"Failed to adjust Product No. {request.ProductId}"
+        });
+    }
+
 }

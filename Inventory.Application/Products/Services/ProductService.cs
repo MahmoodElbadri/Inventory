@@ -13,7 +13,8 @@ namespace Inventory.Application.Products.Services;
 
 public class ProductService(IProductRepository productRepository, IMapper mapper, IValidator<ProductAddRequest> addValidator,
     IValidator<ProductUpdateRequest> updateValidator,
-    IValidator<RestockAddRequest> restockValidator) : IProductService
+    IValidator<RestockAddRequest> restockValidator,
+    IValidator<AdjustAddRequest> adjustValidator) : IProductService
 {
     public async Task<ProductResponse> AddProductAsync(ProductAddRequest product, CancellationToken cancellationToken)
     {
@@ -58,6 +59,21 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
         }
 
         return await productRepository.RestockProduct(restock.ProductId, restock.Quantity, cancellationToken);
+    }
+
+    public async Task<bool> AdjustProduct(AdjustAddRequest adjustment, CancellationToken cancellationToken)
+    {
+        var validationResult = await adjustValidator.ValidateAsync(adjustment, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            throw new BadRequestException(
+                string.Join(" ", validationResult.Errors
+                    .Select(error => error.ErrorMessage)));
+        }
+
+        
+        
+        return await productRepository.AdjustProduct(adjustment.ProductId, adjustment.NewQuantity, adjustment.Reason,cancellationToken);
     }
 
     public async Task<PagedResult<ProductResponse>> GetAllProductsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken)

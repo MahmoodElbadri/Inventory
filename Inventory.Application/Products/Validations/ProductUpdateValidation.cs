@@ -16,4 +16,3 @@ public class ProductUpdateValidation : AbstractValidator<ProductUpdateRequest>
             .GreaterThan(0).WithMessage("Product price must be greater than zero.");
     }
 }
-

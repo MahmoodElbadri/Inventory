@@ -46,6 +46,9 @@ namespace Inventory.Infrastructure.Migrations
                     b.Property<int>("QuantityChanged")
                         .HasColumnType("int");
 
+                    b.Property<int>("QuantityOnHand")
+                        .HasColumnType("int");
+
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
