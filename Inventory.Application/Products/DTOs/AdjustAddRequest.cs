@@ -13,5 +13,5 @@ public class AdjustAddRequest
 {
  public int ProductId { get; set; }
  public int NewQuantity { get; set; }
- public string Reason { get; set; } = "Physical stock count";
+ public string Reason { get; set; } 
 }

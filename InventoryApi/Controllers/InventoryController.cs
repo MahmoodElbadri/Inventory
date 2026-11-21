@@ -28,7 +28,7 @@ public class InventoryController(IProductService _productService) : ControllerBa
     }
 
     ///api/inventory/adjust
-    [HttpPut("adjust")]
+    [HttpPost("adjust")]
     public async Task<IActionResult> AdjustInventory(AdjustAddRequest request, CancellationToken cancellationToken)
     {
         var isAdjusted = await _productService.AdjustProduct(request, cancellationToken);

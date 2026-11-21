@@ -127,7 +127,8 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
         {
             throw new NotFoundException($"Product {productId} not found");
         }
-        if(product.QuantityOnHand == quantity)
+
+        if (product.QuantityOnHand == quantity)
         {
             return true;
         }
@@ -135,43 +136,48 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
         int attempt = 0;
         int maxAttempts = 3;
 
-        try
+        for (int i = 0; i < maxAttempts; i++)
         {
-            await using var transactionProcess = await db.Database.BeginTransactionAsync(cancellationToken);
-
-            // add a checkpoint to rollback to the latest checkpoint 
-            await transactionProcess.CreateSavepointAsync("beforeAdjust", cancellationToken);
-
-            product.QuantityOnHand += quantity;
-
-
-            db.InventoryTransactions.Add(new InventoryTransaction
+            try
             {
-                ProductId = productId,
-                QuantityChanged = quantity,
-                Type = TransactionType.Adjustment,
-                AdjustmentReason = reason
-            });
-            //    await transactionProcess.RollbackToSavepointAsync("beforeRestock", cancellationToken);
+                await using var transactionProcess = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            await db.SaveChangesAsync(cancellationToken);
+                // add a checkpoint to rollback to the latest checkpoint 
+                await transactionProcess.CreateSavepointAsync("beforeAdjust", cancellationToken);
 
-            await transactionProcess.CommitAsync(cancellationToken);
+                int prevQuantity = product.QuantityOnHand;
+                product.QuantityOnHand = quantity;
+
+
+                db.InventoryTransactions.Add(new InventoryTransaction
+                {
+                    ProductId = productId,
+                    QuantityChanged = quantity - prevQuantity,
+                    QuantityOnHand = quantity,
+                    Type = TransactionType.Adjustment,
+                    AdjustmentReason = reason
+                });
+                //    await transactionProcess.RollbackToSavepointAsync("beforeRestock", cancellationToken);
+
+                await db.SaveChangesAsync(cancellationToken);
+
+                await transactionProcess.CommitAsync(cancellationToken);
+                return true;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                db.ChangeTracker.Clear();
+
+                if (attempt == maxAttempts - 1)
+                    return false;
+                attempt++;
+
+                var delay = 100 * (1 << attempt)
+                            + Random.Shared.Next(20, 100);
+
+                await Task.Delay(delay, cancellationToken);
+            }
         }
-        catch (DbUpdateConcurrencyException)
-        {
-            db.ChangeTracker.Clear();
-
-            if (attempt == maxAttempts - 1)
-                return false;
-            attempt++;
-
-            var delay = 100 * (1 << attempt)
-                        + Random.Shared.Next(20, 100);
-
-            await Task.Delay(delay, cancellationToken);
-        }
-
 
         return true;
     }
