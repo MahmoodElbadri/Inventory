@@ -86,6 +86,7 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
                     ProductId = productId,
                     QuantityChanged = quantity,
                     Type = TransactionType.Restock,
+                    QuantityOnHand = product.QuantityOnHand,
                     AdjustmentReason = $"Restocked product No. {productId} by {quantity} pieces at {DateTime.Now}"
                 });
                 //    await transactionProcess.RollbackToSavepointAsync("beforeRestock", cancellationToken);
@@ -121,25 +122,25 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
     public async Task<bool> AdjustProduct(int productId, int quantity, string reason,
         CancellationToken cancellationToken)
     {
-        var product =
-            await db.Products.FirstOrDefaultAsync(tmp => tmp.Id == productId && !tmp.isDeleted, cancellationToken);
-        if (product == null)
-        {
-            throw new NotFoundException($"Product {productId} not found");
-        }
-
-        if (product.QuantityOnHand == quantity)
-        {
-            return true;
-        }
-
-        int attempt = 0;
         int maxAttempts = 3;
 
         for (int i = 0; i < maxAttempts; i++)
         {
             try
             {
+                var product =
+                    await db.Products.FirstOrDefaultAsync(tmp => tmp.Id == productId && !tmp.isDeleted,
+                        cancellationToken);
+                if (product == null)
+                {
+                    throw new NotFoundException($"Product {productId} not found");
+                }
+
+                if (product.QuantityOnHand == quantity)
+                {
+                    return true;
+                }
+
                 await using var transactionProcess = await db.Database.BeginTransactionAsync(cancellationToken);
 
                 // add a checkpoint to rollback to the latest checkpoint 
@@ -168,18 +169,17 @@ public class ProductRepository(InventoryDbContext db) : IProductRepository
             {
                 db.ChangeTracker.Clear();
 
-                if (attempt == maxAttempts - 1)
+                if (i == maxAttempts - 1)
                     return false;
-                attempt++;
+                
 
-                var delay = 100 * (1 << attempt)
+                var delay = 100 * (1 << i)
                             + Random.Shared.Next(20, 100);
 
                 await Task.Delay(delay, cancellationToken);
             }
         }
-
-        return true;
+        throw new InvalidOperationException("Unexpected execution path during product adjustment.");
     }
 
     public async Task<bool> UpdateProductAsync(int id, Product product, CancellationToken cancellationToken)
